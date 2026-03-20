@@ -118,8 +118,9 @@ The application will open automatically in your browser.
 - Fetch oceanographic datasets from Copernicus Marine
 
 - Store datasets in NetCDF format (locally / AWS S3)
+  
 
-2. Data Preprocessing
+2. ### Data Preprocessing
 
 - Remove land pixels using ocean mask
 
@@ -129,7 +130,7 @@ The application will open automatically in your browser.
 
 - Align all variables to a common grid
 
-3. Forecasting (ConvLSTM)
+3. ### Forecasting (ConvLSTM)
 
 - Input: Previous 4 days of environmental data
 
@@ -137,7 +138,7 @@ The application will open automatically in your browser.
 
 - Spatial attention improves bloom localization
 
-4. HAB Risk Classification
+4. ### HAB Risk Classification
 
 - XGBoost model classifies:
 
@@ -147,7 +148,7 @@ The application will open automatically in your browser.
 
     - High Risk
 
-5. Explainability (SHAP)
+5. ### Explainability (SHAP)
 
 - Identifies key environmental drivers:
 
@@ -157,7 +158,7 @@ The application will open automatically in your browser.
 
     - Primary productivity
 
-6. Visualization (Streamlit)
+6. ### Visualization (Streamlit)
 
 - Bloom maps
 
