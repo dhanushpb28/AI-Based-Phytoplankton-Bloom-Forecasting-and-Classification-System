@@ -113,7 +113,7 @@ The application will open automatically in your browser.
 <br>
 
 ## How It Works
-1. Data Acquisition
+1. ### Data Acquisition
 
 - Fetch oceanographic datasets from Copernicus Marine
 
