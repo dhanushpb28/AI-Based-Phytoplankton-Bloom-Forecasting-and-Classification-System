@@ -312,3 +312,102 @@ def plot_forecast_map(lat, lon, data, title):
     ax.set_title(title)
 
     return fig
+from matplotlib.patches import Patch
+
+def plot_hab_risk_map(ds_day, risk_map, threshold,
+                      lat_min, lat_max, lon_min, lon_max):
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+    from matplotlib.patches import Patch
+
+    chl = ds_day["chl"].values
+    lat = ds_day.latitude.values
+    lon = ds_day.longitude.values
+
+    bloom_mask = chl >= threshold
+
+    fig = plt.figure(figsize=(11,7))
+    ax = plt.axes(projection=ccrs.PlateCarree())
+
+    ax.set_extent([lon_min, lon_max, lat_min, lat_max])
+
+    # -----------------------------
+    # Chlorophyll base layer
+    # -----------------------------
+    chl_vis = np.log1p(np.clip(chl, 0, None))
+
+    mesh = ax.pcolormesh(
+        lon,
+        lat,
+        chl_vis,
+        cmap="viridis",
+        shading="auto",
+        transform=ccrs.PlateCarree()
+    )
+
+    # -----------------------------
+    # Bloom boundary
+    # -----------------------------
+    ax.contour(
+        lon,
+        lat,
+        bloom_mask.astype(int),
+        levels=[0.5],
+        colors="white",
+        linewidths=1.5,
+        transform=ccrs.PlateCarree()
+    )
+
+    # -----------------------------
+    # Moderate HAB
+    # -----------------------------
+    ax.contourf(
+        lon,
+        lat,
+        np.where(risk_map == 1, 1, np.nan),
+        levels=[0.5,1.5],
+        colors=["orange"],
+        alpha=0.5,
+        transform=ccrs.PlateCarree()
+    )
+
+    # -----------------------------
+    # High HAB
+    # -----------------------------
+    ax.contourf(
+        lon,
+        lat,
+        np.where(risk_map == 2, 1, np.nan),
+        levels=[0.5,1.5],
+        colors=["red"],
+        alpha=0.7,
+        transform=ccrs.PlateCarree()
+    )
+
+    # -----------------------------
+    # Map styling
+    # -----------------------------
+    ax.add_feature(cfeature.LAND, facecolor="lightgray")
+    ax.coastlines(resolution="10m")
+
+    # -----------------------------
+    # Legend
+    # -----------------------------
+    legend_elements = [
+        Patch(facecolor='none', edgecolor='white', label=f'Bloom (> {threshold} mg/m³)'),
+        Patch(facecolor='orange', label='Moderate HAB Risk'),
+        Patch(facecolor='red', label='High HAB Risk')
+    ]
+
+    ax.legend(handles=legend_elements, loc="lower left")
+
+    plt.colorbar(mesh, ax=ax, shrink=0.7, label="log(1 + Chlorophyll)")
+
+    ax.set_title("Bloom & HAB Risk Map")
+
+    plt.tight_layout()
+
+    return fig

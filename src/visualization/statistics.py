@@ -38,7 +38,7 @@ def compute_kpis(ds, bloom_mask):
     current_speed = float(np.sqrt(ds.uo**2 + ds.vo**2).mean())
     nutrient_index = float((ds.no3.mean() + ds.po4.mean()) / 2)
 
-    growth = float(ds.chl.diff("time").mean())
+    growth = float(ds.chl.diff("time").mean(skipna=True))
 
     # =====================================================
     # INTERPRETATION RULES (very important)
@@ -137,29 +137,29 @@ def plot_bloom_timeseries(ds, bloom_mask):
 
     return fig
 
-# =========================================================
-# 2️⃣ Environmental drivers vs time
-# =========================================================
-def plot_environment_timeseries(ds):
+# # =========================================================
+# # 2️⃣ Environmental drivers vs time
+# # =========================================================
+# def plot_environment_timeseries(ds):
 
-    chl  = ds.chl.mean(dim=["latitude","longitude"])
-    no3  = ds.no3.mean(dim=["latitude","longitude"])
-    po4  = ds.po4.mean(dim=["latitude","longitude"])
-    sst  = ds.sea_surface_temperature_anomaly.mean(dim=["latitude","longitude"])
+#     chl  = ds.chl.mean(dim=["latitude","longitude"])
+#     no3  = ds.no3.mean(dim=["latitude","longitude"])
+#     po4  = ds.po4.mean(dim=["latitude","longitude"])
+#     sst  = ds.sea_surface_temperature_anomaly.mean(dim=["latitude","longitude"])
 
-    fig, ax = plt.subplots(figsize=(9,4))
+#     fig, ax = plt.subplots(figsize=(9,4))
 
-    ax.plot(ds.time, chl,  label="Chlorophyll")
-    ax.plot(ds.time, no3,  label="Nitrate")
-    ax.plot(ds.time, po4,  label="Phosphate")
-    ax.plot(ds.time, sst,  label="SST anomaly")
+#     ax.plot(ds.time, chl,  label="Chlorophyll")
+#     ax.plot(ds.time, no3,  label="Nitrate")
+#     ax.plot(ds.time, po4,  label="Phosphate")
+#     ax.plot(ds.time, sst,  label="SST anomaly")
 
-    _format_dates(ax)
+#     _format_dates(ax)
 
-    ax.legend()
-    ax.set_title("Environmental Drivers Over Time")
+#     ax.legend()
+#     ax.set_title("Environmental Drivers Over Time")
 
-    return fig
+#     return fig
 
 # =========================================================
 # 3️⃣ Regional bloom analysis
@@ -212,31 +212,7 @@ def plot_correlation_matrix(ds):
 
     return fig
 
-# =========================================================
-# 6️⃣ Scatter relationships
-# =========================================================
-def plot_driver_scatter(ds):
 
-    speed = _current_speed(ds)
-
-    chl, no3, sst = _flatten_valid(
-        ds.chl.values.flatten(),
-        ds.no3.values.flatten(),
-        ds.sea_surface_temperature_anomaly.values.flatten()
-    )
-
-    fig, axes = plt.subplots(1,3, figsize=(12,4))
-
-    axes[0].scatter(no3, chl, s=2)
-    axes[0].set_title("Chl vs Nitrate")
-
-    axes[1].scatter(sst, chl, s=2)
-    axes[1].set_title("Chl vs SST")
-
-    axes[2].scatter(speed.values.flatten(), ds.chl.values.flatten(), s=2)
-    axes[2].set_title("Chl vs Currents")
-
-    return fig
 
 # =========================================================
 # 7️⃣ Bloom growth distribution

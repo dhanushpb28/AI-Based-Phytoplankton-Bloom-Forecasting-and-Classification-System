@@ -2,7 +2,7 @@
 # ENVIRONMENT SAFETY
 # =========================================================
 import sys, os, tempfile
-
+import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(__file__))
 
 tmp = tempfile.gettempdir()
@@ -18,6 +18,7 @@ for env in ["CARTOPY_DATA_DIR","CARTOPY_USER_BACKGROUNDS","MPLCONFIGDIR","STREAM
 # =========================================================
 # IMPORTS
 # =========================================================
+import shap
 import streamlit as st
 import datetime
 import numpy as np
@@ -26,6 +27,9 @@ from visualization.visualizer import plot_forecast_map
 from data.update_database import update_database
 from data.s3_loader import load_from_s3
 from data.detection import detect_bloom
+from classification.hab_model import classify_hab
+from classification.explain_hab import get_high_risk_importance
+from visualization.visualizer import plot_hab_risk_map
 
 from visualization.visualizer import (
     plot_chl_bloom,
@@ -101,8 +105,12 @@ bloom_mask = detect_bloom(ds.chl, threshold)
 # =========================================================
 # TABS
 # =========================================================
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["📊 Detection Results", "📈 Variable Analysis", "📋 Statistics", "🔮 Forecasting"]
+tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    ["📊 Detection Results",
+     "📈 Variable Analysis",
+     "📋 Statistics",
+     "🔮 Forecasting",
+     "🧪 HAB Classification"]
 )
 # ---------------- TAB 1 ----------------
 with tab1:
@@ -172,10 +180,8 @@ with tab2:
 from visualization.statistics import (
     compute_kpis,
     plot_bloom_timeseries,
-    plot_environment_timeseries,
     plot_regional_bloom,
     plot_correlation_matrix,
-    plot_driver_scatter,
     plot_multivariate_trend
 )
 
@@ -187,7 +193,7 @@ with tab3:
     # =====================================================
     kpis = compute_kpis(ds, bloom_mask)
 
-    st.markdown("## 🌊 Executive Bloom Dashboard")
+    st.markdown("## 🌊  Bloom Dashboard")
 
     def kpi_color(text):
         if "High" in text or "Expanding" in text or "Warming" in text or "Rich" in text or "Fast" in text:
@@ -219,16 +225,15 @@ with tab3:
     # =====================================================
     # TEMPORAL ANALYTICS
     # =====================================================
-    st.markdown("## 📈 Temporal Bloom Analytics")
+    st.markdown("## 📈 Bloom Dynamics")
 
-    col1,col2 = st.columns(2)
-    col1.pyplot(plot_bloom_timeseries(ds, bloom_mask))
-    col2.pyplot(plot_environment_timeseries(ds))
+    st.pyplot(plot_bloom_timeseries(ds, bloom_mask))
+
+    st.markdown("## 🌊 Ecosystem Drivers")
 
     st.pyplot(plot_multivariate_trend(ds))
 
     st.divider()
-
     # =====================================================
     # SPATIAL ANALYTICS
     # =====================================================
@@ -243,9 +248,7 @@ with tab3:
     # =====================================================
     st.markdown("## 🔬 Environmental Relationships")
 
-    col1,col2 = st.columns(2)
-    col1.pyplot(plot_correlation_matrix(ds))
-    col2.pyplot(plot_driver_scatter(ds))
+    st.pyplot(plot_correlation_matrix(ds))
 
 with tab4:
 
@@ -280,4 +283,89 @@ with tab4:
                 day2,
                 f"Forecast - {str(next_day2)[:10]}"
             )
+        )
+    # ---------------- TAB 5 ----------------
+    with tab5:
+
+        st.subheader("🧪 HAB Risk Classification")
+
+        selected_date = st.selectbox(
+            "Select Date",
+            ds.time.values
+        )
+
+        ds_day = ds.sel(time=selected_date)
+
+        risk_map = classify_hab(ds_day, threshold)
+        
+        st.pyplot(
+            plot_hab_risk_map(
+                ds_day,
+                risk_map,
+                threshold,
+                lat_min,
+                lat_max,
+                lon_min,
+                lon_max
+            )
+        )
+
+            # ---------------------------------------------------
+        # Explainable AI Section
+        # ---------------------------------------------------
+
+        st.markdown("## 🔬 Explainable AI: Drivers of HAB Risk")
+
+        st.markdown(
+        """
+        This analysis uses **SHAP (SHapley Additive exPlanations)** to interpret the
+        machine learning model and identify which **environmental variables**
+        contribute most to predicting **high-risk Harmful Algal Bloom (HAB) conditions**.
+        """
+        )
+
+        ranked, shap_values, X = get_high_risk_importance(ds_day)
+
+        # =====================================================
+        # FEATURE IMPORTANCE BAR CHART
+        # =====================================================
+
+        st.subheader("📊 Environmental Feature Importance")
+
+        fig, ax = plt.subplots()
+
+        mean_vals = np.mean(np.abs(shap_values), axis=0)
+
+        ax.barh(ranked[::-1], mean_vals[::-1])
+        ax.set_xlabel("Mean |SHAP Value|")
+        ax.set_title("Key Environmental Drivers of HAB Risk")
+
+        st.pyplot(fig)
+
+
+        # =====================================================
+        # TOP DRIVERS
+        # =====================================================
+
+        st.subheader("Top Environmental Drivers")
+
+        for i, feat in enumerate(ranked[:5], 1):
+            st.write(f"**{i}. {feat}**")
+
+        # =====================================================
+        # INTERPRETATION
+        # =====================================================
+
+        top_driver = ranked[0]
+
+        st.subheader("🧠 Model Interpretation")
+
+        st.info(
+        f"""
+        The model indicates that **{top_driver}** is the most influential
+        environmental variable contributing to **High HAB Risk predictions**.
+
+        Higher SHAP values indicate stronger contribution toward predicting
+        **harmful algal bloom conditions** in the selected region and date.
+        """
         )

@@ -41,6 +41,7 @@ Jinja2==3.1.6
 jmespath==1.1.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
+keras==2.15.0
 kiwisolver==1.4.9
 libclang==18.1.1
 locket==1.0.0
